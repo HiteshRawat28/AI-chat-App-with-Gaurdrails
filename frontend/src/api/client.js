@@ -17,6 +17,13 @@ export const apiClient = async (endpoint, options = {}) => {
   const data = await response.json();
   
   if (!response.ok) {
+    if (response.status === 429) {
+      const error = new Error('Rate limit exceeded');
+      error.isRateLimit = true;
+      error.retryAfter = data.retryAfter;
+      throw error;
+    }
+    
     if (data.blocked) {
       // Throw a specific error object we can identify in the UI
       const error = new Error('Blocked by guardrail');

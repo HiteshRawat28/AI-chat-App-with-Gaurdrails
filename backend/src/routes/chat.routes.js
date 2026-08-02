@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../prisma');
 const authMiddleware = require('../middleware/auth.middleware');
+const rateLimitMiddleware = require('../middleware/rateLimit.middleware');
 const { generateChatResponse } = require('../llm/geminiClient');
 const { checkInput } = require('../guardrails/inputGuardrail');
 const { checkOutput } = require('../guardrails/outputGuardrail');
@@ -30,8 +31,14 @@ router.get('/history', async (req, res) => {
   }
 });
 
-// POST /api/chat/message - send a new message
-router.post('/message', async (req, res) => {
+// POST /api/chat/message
+// 1. Authenticate user
+// 2. Rate limit user
+// 3. Apply input guardrails
+// 4. Call LLM
+// 5. Apply output guardrails
+// 6. Save and return
+router.post('/message', authMiddleware, rateLimitMiddleware, async (req, res) => {
   try {
     const { content, conversationId } = req.body;
     

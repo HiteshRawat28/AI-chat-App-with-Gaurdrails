@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import GuardrailNotice from './GuardrailNotice';
+import { RateLimitNotice } from './RateLimitNotice';
 import { apiClient } from '../api/client';
 
 const ChatWindow = () => {
@@ -9,6 +10,7 @@ const ChatWindow = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [error, setError] = useState('');
+  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState(0);
   
   const messagesEndRef = useRef(null);
 
@@ -60,7 +62,10 @@ const ChatWindow = () => {
       setConversationId(response.conversationId);
       setMessages(prev => [...prev.filter(m => m !== userMsg), response.userMessage, response.assistantMessage]);
     } catch (err) {
-      if (err.isGuardrail) {
+      if (err.isRateLimit) {
+        setRateLimitRetryAfter(err.retryAfter);
+        setMessages(prev => prev.filter(m => m !== userMsg));
+      } else if (err.isGuardrail) {
         // Append a synthetic message indicating a guardrail block
         setMessages(prev => [...prev.filter(m => m !== userMsg), userMsg, { isNotice: true, reason: err.reason }]);
       } else {
@@ -108,7 +113,16 @@ const ChatWindow = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <MessageInput onSend={handleSendMessage} disabled={isLoading} />
+      <div style={{ padding: '0 1.5rem' }}>
+        {rateLimitRetryAfter > 0 && (
+          <RateLimitNotice 
+            retryAfter={rateLimitRetryAfter} 
+            onExpire={() => setRateLimitRetryAfter(0)} 
+          />
+        )}
+      </div>
+
+      <MessageInput onSend={handleSendMessage} disabled={isLoading || rateLimitRetryAfter > 0} />
     </div>
   );
 };
