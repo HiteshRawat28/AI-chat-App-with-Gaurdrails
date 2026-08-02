@@ -17,6 +17,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('[Global Error]', err.stack);
+  res.status(500).json({ error: 'An unexpected internal server error occurred.' });
+});
+
 const PORT = process.env.PORT || 3000;
 
 if (require.main === module) {

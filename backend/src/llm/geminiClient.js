@@ -21,27 +21,37 @@ const getClient = () => {
  * @param {string} newMessage - The latest user message
  * @returns {Promise<string>} The assistant's reply
  */
-const generateChatResponse = async (history, newMessage) => {
+const generateChatResponse = async (history, newMessage, modelPreference = 'mock') => {
   const client = getClient();
-  
+
   // Map our internal history format to Gemini's expected Content format
   const contents = history.map(msg => ({
     role: msg.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: msg.content }]
   }));
-  
+
   // Append the new message
   contents.push({
     role: 'user',
     parts: [{ text: newMessage }]
   });
 
+  if (modelPreference === 'mock') {
+    // TEMPORARY MOCK to bypass Google's Project Lock for testing
+    // Simulate a 2-second network delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return `(Mocked AI Response) I heard you say: "${newMessage}". I'm running in offline test mode right now!`;
+  }
+
+  // Determine actual model string
+  const actualModel = modelPreference === 'high' ? 'gemini-3.5-flash' : 'gemini-2.5-flash';
+
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-3.5-flash', 
+      model: actualModel,
       contents: contents,
     });
-    
+
     return response.text;
   } catch (error) {
     console.error("Gemini API Error:", error);

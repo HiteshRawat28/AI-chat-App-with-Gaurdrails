@@ -40,7 +40,7 @@ router.get('/history', async (req, res) => {
 // 6. Save and return
 router.post('/message', authMiddleware, rateLimitMiddleware, async (req, res) => {
   try {
-    const { content, conversationId } = req.body;
+    const { content, conversationId, modelPreference } = req.body;
     
     if (!content) {
       return res.status(400).json({ error: 'Message content is required' });
@@ -99,7 +99,7 @@ router.post('/message', authMiddleware, rateLimitMiddleware, async (req, res) =>
     }));
 
     // Call Gemini
-    const llmResponseText = await generateChatResponse(history, content);
+    const llmResponseText = await generateChatResponse(history, content, modelPreference);
 
     // 2. Run Output Guardrail
     const outputGuardrailResult = checkOutput(llmResponseText);
@@ -152,7 +152,15 @@ router.post('/message', authMiddleware, rateLimitMiddleware, async (req, res) =>
     });
   } catch (error) {
     console.error('Send message error:', error);
-    res.status(500).json({ error: "couldn't get a response, try again" });
+    
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('Quota')) {
+      return res.status(503).json({ 
+        error: "The AI provider is currently out of capacity or quota. Please try again later.",
+        isApiError: true 
+      });
+    }
+
+    res.status(500).json({ error: "An unexpected error occurred while connecting to the AI provider." });
   }
 });
 
