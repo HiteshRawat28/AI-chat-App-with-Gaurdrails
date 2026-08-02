@@ -3,6 +3,7 @@ const prisma = require('../prisma');
 const authMiddleware = require('../middleware/auth.middleware');
 const { generateChatResponse } = require('../llm/geminiClient');
 const { checkInput } = require('../guardrails/inputGuardrail');
+const { checkOutput } = require('../guardrails/outputGuardrail');
 const { logGuardrailEvent } = require('../services/guardrailLog.service');
 
 const router = express.Router();
@@ -93,12 +94,41 @@ router.post('/message', async (req, res) => {
     // Call Gemini
     const llmResponseText = await generateChatResponse(history, content);
 
+    // 2. Run Output Guardrail
+    const outputGuardrailResult = checkOutput(llmResponseText);
+    
+    let finalAssistantText = llmResponseText;
+
+    if (!outputGuardrailResult.allowed) {
+      // Log the severe violation
+      await logGuardrailEvent({
+        userId: req.user.userId,
+        type: 'output',
+        ruleTriggered: outputGuardrailResult.reason,
+        contentSnippet: llmResponseText.substring(0, 50)
+      });
+      
+      // Replace with fallback message
+      finalAssistantText = "I apologize, but I am unable to generate a response for that topic due to safety guidelines.";
+    } else if (outputGuardrailResult.sanitizedText) {
+      // Log the sanitization event
+      await logGuardrailEvent({
+        userId: req.user.userId,
+        type: 'output',
+        ruleTriggered: outputGuardrailResult.reason,
+        contentSnippet: llmResponseText.substring(0, 50)
+      });
+      
+      // Use the sanitized text (e.g. truncated)
+      finalAssistantText = outputGuardrailResult.sanitizedText;
+    }
+
     // Save assistant message
     const assistantMessage = await prisma.message.create({
       data: {
         conversationId: conversation.id,
         role: 'assistant',
-        content: llmResponseText
+        content: finalAssistantText
       }
     });
 
