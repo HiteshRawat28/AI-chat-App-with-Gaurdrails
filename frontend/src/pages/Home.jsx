@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import ChatWindow from '../components/ChatWindow';
 
 const Home = () => {
   const { user, logout } = useAuth();
@@ -24,14 +25,7 @@ const Home = () => {
         </div>
       </header>
       
-      <div style={{ padding: '3rem 2rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Welcome to Phase 3</h1>
-        <p style={{ color: '#94a3b8', fontSize: '1.125rem' }}>
-          Authentication is working! You are logged in as {user?.email}.
-          <br /><br />
-          In the next phase, we will implement the core chat interface here.
-        </p>
-      </div>
+      <ChatWindow />
     </div>
   );
 };
