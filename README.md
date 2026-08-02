@@ -17,7 +17,7 @@ A full-stack AI chat application built with React, Node.js, Express, and Prisma,
 
 - **Frontend**: React, Vite, Vanilla CSS
 - **Backend**: Node.js, Express
-- **Database**: SQLite (via Prisma ORM)
+- **Database**: PostgreSQL (via Prisma ORM)
 - **AI Provider**: Google GenAI (Gemini)
 
 ## Setup Instructions
@@ -38,15 +38,16 @@ npm install
 Create a `.env` file in the `backend` directory with the following variables:
 ```env
 PORT=3000
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://johndoe:randompassword@localhost:5433/ai_chat_db?schema=public"
 JWT_SECRET="your_super_secret_jwt_key_123"
 GEMINI_API_KEY="your_google_gemini_api_key"
 RATE_LIMIT_MAX_REQUESTS=5
 RATE_LIMIT_WINDOW_MS=60000
 ```
 
-### 3. Database Migration
-Run Prisma to set up the SQLite database schema:
+### 3. Database & Migrations
+Ensure you have a PostgreSQL instance running (e.g., via Docker on port 5433 as configured in `docker-compose.yml`).
+Then run Prisma to set up the database schema:
 ```bash
 cd backend
 npx prisma migrate dev
@@ -69,7 +70,7 @@ The application will be available at `http://localhost:5173`.
 ## Architecture & Data Flow
 
 1. **User Request**: The user submits a message via the React frontend.
-2. **Auth & Rate Limiting**: The Express backend verifies the JWT and checks the rate limit bucket in SQLite.
+2. **Auth & Rate Limiting**: The Express backend verifies the JWT and checks the rate limit bucket in PostgreSQL.
 3. **Input Guardrail**: The message is checked against restricted topics. If blocked, an event is logged and the request is rejected.
 4. **LLM Generation**: The prompt is sent to the Gemini API.
 5. **Output Guardrail**: The AI's response is sanitized before being returned to the user.

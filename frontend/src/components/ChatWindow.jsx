@@ -95,8 +95,8 @@ const ChatWindow = () => {
       margin: messages.length === 0 ? '0 auto' : '2rem auto',
       backgroundColor: messages.length === 0 ? 'transparent' : 'var(--surface-color)',
       borderRadius: messages.length === 0 ? '0' : '16px',
-      boxShadow: messages.length === 0 ? 'none' : 'var(--shadow-sm)',
-      border: messages.length === 0 ? 'none' : '1px solid var(--border-color)',
+      boxShadow: messages.length === 0 ? '0 0 0 0 rgba(79, 70, 229, 0)' : '0 10px 40px -10px rgba(79, 70, 229, 0.25), 0 4px 14px 0 rgba(79, 70, 229, 0.15)',
+      border: messages.length === 0 ? '1px solid transparent' : '1px solid var(--border-color)',
       padding: '2rem 1rem',
       transition: 'all 0.3s ease-in-out'
     }}>
