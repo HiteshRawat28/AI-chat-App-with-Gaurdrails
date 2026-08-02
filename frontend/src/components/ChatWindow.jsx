@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import GuardrailNotice from './GuardrailNotice';
 import { apiClient } from '../api/client';
 
 const ChatWindow = () => {
@@ -59,8 +60,13 @@ const ChatWindow = () => {
       setConversationId(response.conversationId);
       setMessages(prev => [...prev.filter(m => m !== userMsg), response.userMessage, response.assistantMessage]);
     } catch (err) {
-      setError(err.message || 'Failed to send message');
-      setMessages(prev => prev.filter(m => m !== userMsg));
+      if (err.isGuardrail) {
+        // Append a synthetic message indicating a guardrail block
+        setMessages(prev => [...prev.filter(m => m !== userMsg), userMsg, { isNotice: true, reason: err.reason }]);
+      } else {
+        setError(err.message || 'Failed to send message');
+        setMessages(prev => prev.filter(m => m !== userMsg));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -90,7 +96,9 @@ const ChatWindow = () => {
         flexDirection: 'column'
       }}>
         {messages.map((msg, idx) => (
-          <MessageBubble key={idx} message={msg} />
+          msg.isNotice 
+            ? <GuardrailNotice key={idx} reason={msg.reason} />
+            : <MessageBubble key={idx} message={msg} />
         ))}
         {isLoading && (
           <div style={{ alignSelf: 'flex-start', color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0.5rem 1rem' }}>

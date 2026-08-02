@@ -2,6 +2,8 @@ const express = require('express');
 const prisma = require('../prisma');
 const authMiddleware = require('../middleware/auth.middleware');
 const { generateChatResponse } = require('../llm/geminiClient');
+const { checkInput } = require('../guardrails/inputGuardrail');
+const { logGuardrailEvent } = require('../services/guardrailLog.service');
 
 const router = express.Router();
 
@@ -34,6 +36,21 @@ router.post('/message', async (req, res) => {
     
     if (!content) {
       return res.status(400).json({ error: 'Message content is required' });
+    }
+
+    // 1. Run Input Guardrail
+    const guardrailResult = checkInput(content);
+    if (!guardrailResult.allowed) {
+      // Log the event
+      await logGuardrailEvent({
+        userId: req.user.userId,
+        type: 'input',
+        ruleTriggered: guardrailResult.reason,
+        contentSnippet: content.substring(0, 50)
+      });
+      
+      // Return structured response indicating blocked
+      return res.status(400).json({ blocked: true, reason: guardrailResult.reason });
     }
 
     let conversation;
