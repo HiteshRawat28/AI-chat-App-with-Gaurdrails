@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
 const { logGuardrailEvent } = require('../services/guardrailLog.service');
-const prisma = new PrismaClient();
+const prisma = require('../prisma');
 
 const MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '5', 10);
 const WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10);

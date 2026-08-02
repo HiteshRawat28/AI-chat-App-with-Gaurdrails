@@ -20,7 +20,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  conversations Conversation[]
+  conversations  Conversation[]
+  guardrailEvents GuardrailEvent[]
 }
 
 model Conversation {
@@ -47,4 +48,15 @@ model RateLimit {
   userId    String   @id
   count     Int      @default(0)
   resetTime DateTime
+}
+
+model GuardrailEvent {
+  id             String   @id @default(uuid())
+  userId         String
+  type           String   // 'input', 'output', 'rate-limit'
+  ruleTriggered  String   // e.g., 'restricted_topic_finance', 'max_requests_exceeded'
+  contentSnippet String?
+  createdAt      DateTime @default(now())
+  
+  user           User     @relation(fields: [userId], references: [id])
 }
